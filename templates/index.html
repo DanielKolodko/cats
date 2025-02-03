@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Cat GIFs</title>
+    <!-- Include Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom Styles -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .gif-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .gif-container img {
+            max-width: 100%;
+            max-height: 500px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #004085;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container text-center">
+        <h1 class="display-4 mb-4">Random Cat GIF</h1>
+
+        <!-- Display GIF -->
+        <div class="gif-container">
+            <img src="{{ gif_url }}" alt="Random Cat GIF">
+        </div>
+
+        <div class="mt-4">
+            <a href="{{ url_for('upload_gif') }}" class="btn btn-primary">Upload a new GIF</a>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS (Optional for interactive features) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
