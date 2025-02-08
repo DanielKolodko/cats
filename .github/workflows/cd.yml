@@ -29,6 +29,7 @@ jobs:
       - name: Set up kubectl
         run: |
           # Here we assume you have a base64-encoded kubeconfig stored in the secret KUBECONFIG
+          mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
           kubectl get nodes
 
