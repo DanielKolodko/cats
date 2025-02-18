@@ -5,3 +5,4 @@
 
 # Ignore sensitive files
 ip.txt
+__pycache__
