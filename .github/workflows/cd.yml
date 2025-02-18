@@ -11,29 +11,62 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v2
 
+      # 1.1. Set up GCP credentials
+      - name: Set up GCP credentials
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: onyx-seeker-451213-q9
+          export_default_credentials: true
+
+      # 2. Set up Terraform so we can run Terraform commands
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: '1.5.0'  # Specify the Terraform version you need
+
+      # 3. Initialize Terraform (download providers, modules, etc.)
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      # 4. Run Terraform Plan to see what changes will be applied
+      - name: Terraform Plan
+        working-directory: terraform
+        run: terraform plan
+
+      # 5. Apply Terraform to provision or update your infrastructure
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve
+
+      # 6. Build the Docker image for your app
       - name: Build Docker image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/cat-gifs-app:latest .
 
+      # 7. Log in to Docker Hub using secrets for authentication
       - name: Log in to Docker Hub
         run: |
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
+      # 8. Push the Docker image to Docker Hub
       - name: Push Docker image
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/cat-gifs-app:latest
 
+      # 9. Set up kubectl to interact with your Kubernetes cluster
       - name: Set up kubectl
         run: |
-          # Here we assume you have a base64-encoded kubeconfig stored in the secret KUBECONFIG
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
           kubectl get nodes
 
+      # 10. Deploy your application to Kubernetes using your manifests
       - name: Deploy to Kubernetes
         run: |
-          # Apply all Kubernetes manifests in the k8s/ directory
           kubectl apply -f k8s/
