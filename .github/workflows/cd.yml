@@ -15,19 +15,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # 1.1. Set up GCP credentials
+      # 1.1 Set up GCP credentials using the service account key
       - name: Set up GCP credentials
         uses: google-github-actions/setup-gcloud@v1
         with:
           service_account_key: ${{ secrets.GCP_SA_KEY }}
           project_id: onyx-seeker-451213-q9
           export_default_credentials: true
-
-      # 1.2. Ensure the GCP credentials file exists
-      - name: Write GCP credentials file
-        run: |
-          mkdir -p $HOME/.config/gcloud
-          echo "${{ secrets.GCP_SA_KEY }}" > $HOME/.config/gcloud/application_default_credentials.json
 
       # 2. Set up Terraform so we can run Terraform commands
       - name: Set up Terraform
@@ -39,21 +33,21 @@ jobs:
       - name: Terraform Init
         working-directory: terraform
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: $HOME/.config/gcloud/application_default_credentials.json
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
         run: terraform init
 
       # 4. Run Terraform Plan to see what changes will be applied
       - name: Terraform Plan
         working-directory: terraform
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: $HOME/.config/gcloud/application_default_credentials.json
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
         run: terraform plan
 
       # 5. Apply Terraform to provision or update your infrastructure
       - name: Terraform Apply
         working-directory: terraform
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: $HOME/.config/gcloud/application_default_credentials.json
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
         run: terraform apply -auto-approve
 
       # 6. Build the Docker image for your app
@@ -81,3 +75,4 @@ jobs:
         run: |
           kubectl get nodes
           kubectl apply -f k8s/
+
