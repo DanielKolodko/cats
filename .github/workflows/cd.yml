@@ -73,7 +73,12 @@ jobs:
       - name: Push Docker image
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/cat-gifs-app:latest
-
+      
+      # Install gke-gcloud-auth-plugin so kubectl can use it
+      - name: Install gke-gcloud-auth-plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin --quiet
+      
       # 11. Configure GKE credentials (generate kubeconfig dynamically)
       - name: Configure GKE credentials
         run: |
