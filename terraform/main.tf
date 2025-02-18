@@ -37,7 +37,7 @@ resource "google_container_node_pool" "primary_nodes" {
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
-    image_type = "UBUNTU"
+    image_type = "UBUNTU_CONTAINERD"
   }
 
   initial_node_count = 1
