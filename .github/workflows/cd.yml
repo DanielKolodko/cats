@@ -15,7 +15,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # 1.1 Set up GCP credentials using the service account key
+      # 2. Set up GCP credentials using the service account key
       - name: Set up GCP credentials
         uses: google-github-actions/setup-gcloud@v1
         with:
@@ -23,56 +23,62 @@ jobs:
           project_id: onyx-seeker-451213-q9
           export_default_credentials: true
 
-      # 2. Set up Terraform so we can run Terraform commands
+      # 3. Explicitly activate the service account (if needed)
+      - name: Activate service account
+        run: |
+          echo "${{ secrets.GCP_SA_KEY }}" > ${HOME}/gcloud-key.json
+          gcloud auth activate-service-account --key-file=${HOME}/gcloud-key.json
+          gcloud auth list
+
+      # 4. Set up Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: '1.5.0'
 
-      # 3. Initialize Terraform (download providers, modules, etc.)
+      # 5. Terraform Init
       - name: Terraform Init
         working-directory: terraform
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
         run: terraform init
 
-      # 4. Run Terraform Plan to see what changes will be applied
+      # 6. Terraform Plan
       - name: Terraform Plan
         working-directory: terraform
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
         run: terraform plan
 
-      # 5. Apply Terraform to provision or update your infrastructure
+      # 7. Terraform Apply
       - name: Terraform Apply
         working-directory: terraform
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
         run: terraform apply -auto-approve
 
-      # 6. Build the Docker image for your app
+      # 8. Build the Docker image for your app
       - name: Build Docker image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/cat-gifs-app:latest .
 
-      # 7. Log in to Docker Hub using secrets for authentication
+      # 9. Log in to Docker Hub
       - name: Log in to Docker Hub
         run: |
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      # 8. Push the Docker image to Docker Hub
+      # 10. Push the Docker image to Docker Hub
       - name: Push Docker image
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/cat-gifs-app:latest
 
-      # 9. Configure GKE credentials (generate kubeconfig dynamically)
+      # 11. Configure GKE credentials (generate kubeconfig dynamically)
       - name: Configure GKE credentials
         run: |
           gcloud container clusters get-credentials cat-gifs-cluster --zone us-central1-a --project onyx-seeker-451213-q9
 
-      # 10. Deploy your application to Kubernetes using your manifests
+      # 12. Deploy your application to Kubernetes using your manifests
       - name: Deploy to Kubernetes
         run: |
           kubectl get nodes
           kubectl apply -f k8s/
-
