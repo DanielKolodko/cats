@@ -9,7 +9,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       # 1. Checkout the repository
       - name: Checkout code
@@ -27,21 +26,27 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v1
         with:
-          terraform_version: '1.5.0'  # Specify the Terraform version you need
+          terraform_version: '1.5.0'
 
       # 3. Initialize Terraform (download providers, modules, etc.)
       - name: Terraform Init
         working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: $HOME/.config/gcloud/application_default_credentials.json
         run: terraform init
 
       # 4. Run Terraform Plan to see what changes will be applied
       - name: Terraform Plan
         working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: $HOME/.config/gcloud/application_default_credentials.json
         run: terraform plan
 
       # 5. Apply Terraform to provision or update your infrastructure
       - name: Terraform Apply
         working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: $HOME/.config/gcloud/application_default_credentials.json
         run: terraform apply -auto-approve
 
       # 6. Build the Docker image for your app
@@ -59,14 +64,13 @@ jobs:
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/cat-gifs-app:latest
 
-      # 9. Set up kubectl to interact with your Kubernetes cluster
-      - name: Set up kubectl
+      # 9. Configure GKE credentials (generate kubeconfig dynamically)
+      - name: Configure GKE credentials
         run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
-          kubectl get nodes
+          gcloud container clusters get-credentials cat-gifs-cluster --zone us-central1-a --project onyx-seeker-451213-q9
 
       # 10. Deploy your application to Kubernetes using your manifests
       - name: Deploy to Kubernetes
         run: |
+          kubectl get nodes
           kubectl apply -f k8s/
