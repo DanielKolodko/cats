@@ -31,4 +31,4 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build --cache -t cat-gifs-app:latest .
+          docker build --no-cache -t cat-gifs-app:latest .
