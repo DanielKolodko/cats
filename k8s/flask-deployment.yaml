@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: flask-app
-        image: danielkolodko/workingcats:latest
+        image: danielkolodko/cat-gifs-app:latest
         ports:
         - containerPort: 5000
         env:
@@ -29,6 +29,6 @@ spec:
               name: flask-config
               key: FLASK_ENV
         - name: SQLALCHEMY_DATABASE_URI
-          value: "mysql+pymysql://catuser:catpass@mysql-service/catgifs"
+          value: "mysql+pymysql://catuser:catpassword@mysql-service/catgifs"
       imagePullSecrets:
       - name: regcred
