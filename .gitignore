@@ -1,8 +1,6 @@
-# Ignore Terraform state files
+mysql-secret.yaml
 *.tfstate
 *.tfstate.backup
 .terraform/
-
-# Ignore sensitive files
-ip.txt
 __pycache__
+.env

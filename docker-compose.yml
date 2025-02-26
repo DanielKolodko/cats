@@ -22,7 +22,7 @@ services:
     environment:
       # This connection string tells SQLAlchemy to use PyMySQL to connect
       # to the MySQL container named "db" with the provided credentials.
-      SQLALCHEMY_DATABASE_URI: "mysql+pymysql://catuser:catpassword@db/catgifs"
+      SQLALCHEMY_DATABASE_URI: "mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db/${MYSQL_DATABASE}"
     depends_on:
       - db
 
