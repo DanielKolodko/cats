@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seed-db-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: seed
+        image: mysql:8.0
+        command: ["sh", "-c", "mysql -h mysql-service -u catuser -pcatpassword catgifs < /dump/dump.sql"]
+        volumeMounts:
+        - name: dump-volume
+          mountPath: /dump
+      restartPolicy: OnFailure
+      volumes:
+      - name: dump-volume
+        configMap:
+          name: db-dump-config

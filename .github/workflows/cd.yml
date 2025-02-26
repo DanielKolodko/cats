@@ -99,3 +99,4 @@ jobs:
         run: |
           kubectl get nodes
           kubectl apply -f k8s/
+          kubectl wait --for=condition=complete --timeout=120s job/seed-db-job || kubectl logs job/seed-db-job
