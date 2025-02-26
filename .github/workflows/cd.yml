@@ -23,7 +23,7 @@ jobs:
           project_id: onyx-seeker-451213-q9
           export_default_credentials: true
 
-      # 3. Explicitly activate the service account (if needed)
+      # 3. Activate the service account
       - name: Activate service account
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
@@ -74,12 +74,12 @@ jobs:
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/cat-gifs-app:latest
       
-      # Install gke-gcloud-auth-plugin so kubectl can use it
+      # 11. Install gke-gcloud-auth-plugin so kubectl can use it
       - name: Install gke-gcloud-auth-plugin
         run: |
           gcloud components install gke-gcloud-auth-plugin --quiet
       
-      # 11. Configure GKE credentials (generate kubeconfig dynamically)
+      # 12. Configure GKE credentials (generate kubeconfig dynamically)
       - name: Configure GKE credentials
         run: |
           gcloud container clusters get-credentials cat-gifs-cluster --region us-central1 --project onyx-seeker-451213-q9
@@ -94,9 +94,19 @@ jobs:
             --docker-email="${{ secrets.DOCKER_EMAIL }}" \
             --namespace=default || echo "Secret already exists" 
 
-      # 12. Deploy your application to Kubernetes using your manifests
+      # 14. (Optional) Create ConfigMap for DB dump if using seed-job that relies on it
+      - name: Create ConfigMap for DB Dump
+        run: |
+          kubectl create configmap db-dump-config --from-file=dump.sql --namespace=default || echo "ConfigMap already exists"
+
+      # 15. Deploy your application to Kubernetes using your manifests
       - name: Deploy to Kubernetes
         run: |
           kubectl get nodes
           kubectl apply -f k8s/
+
+      # 16. Seed the Database using the Seed Job
+      - name: Seed Database
+        run: |
+          kubectl apply -f k8s/seed-job.yaml
           kubectl wait --for=condition=complete --timeout=120s job/seed-db-job || kubectl logs job/seed-db-job
