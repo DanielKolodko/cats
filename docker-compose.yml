@@ -10,7 +10,7 @@ services:
       MYSQL_USER: catuser
       MYSQL_PASSWORD: catpassword
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
 
@@ -22,7 +22,7 @@ services:
     environment:
       # This connection string tells SQLAlchemy to use PyMySQL to connect
       # to the MySQL container named "db" with the provided credentials.
-      SQLALCHEMY_DATABASE_URI: "mysql+pymysql://catuser:catpassword@mysql-service/catgifs"
+      SQLALCHEMY_DATABASE_URI: "mysql+pymysql://catuser:catpassword@db:3306/catgifs"
     depends_on:
       - db
 
