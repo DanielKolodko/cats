@@ -10,7 +10,7 @@ services:
       MYSQL_USER: catuser
       MYSQL_PASSWORD: catpassword
     ports:
-      - "80:5000"
+      - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
 
