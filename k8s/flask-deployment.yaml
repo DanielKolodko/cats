@@ -29,6 +29,6 @@ spec:
               name: flask-config
               key: FLASK_ENV
         - name: SQLALCHEMY_DATABASE_URI
-          value: "mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db/${MYSQL_DATABASE}"
+          value: "mysql+pymysql://catuser:catpassword@db/catgifs"
       imagePullSecrets:
       - name: regcred
