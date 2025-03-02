@@ -25,14 +25,12 @@ resource "google_container_cluster" "primary" {
       issue_client_certificate = false
     }
   }
-  
-  # You can include additional settings like network, subnetwork, etc., as needed.
 }
 
 resource "google_container_node_pool" "primary_nodes" {
-  name       = "cat-gifs-node-pool"
-  cluster    = google_container_cluster.primary.name
-  location   = var.region
+  name     = "cat-gifs-node-pool"
+  cluster  = google_container_cluster.primary.name
+  location = var.region
 
   initial_node_count = 1
 
@@ -45,7 +43,12 @@ resource "google_container_node_pool" "primary_nodes" {
       "https://www.googleapis.com/auth/cloud-platform",
     ]
   }
-  
-  # Optionally, you can define upgrade_settings or other parameters if required.
+
+  # Adding an upgrade_settings block can help satisfy some API requirements
+  upgrade_settings {
+    max_surge       = 1
+    max_unavailable = 0
+  }
 }
+
 
