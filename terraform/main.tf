@@ -25,6 +25,8 @@ resource "google_container_cluster" "primary" {
       issue_client_certificate = false
     }
   }
+  
+  # You can include additional settings like network, subnetwork, etc., as needed.
 }
 
 resource "google_container_node_pool" "primary_nodes" {
@@ -32,13 +34,18 @@ resource "google_container_node_pool" "primary_nodes" {
   cluster    = google_container_cluster.primary.name
   location   = var.region
 
+  initial_node_count = 1
+
   node_config {
-    machine_type = var.machine_type
-    oauth_scopes = [
+    machine_type  = var.machine_type
+    disk_size_gb  = var.disk_size_gb
+    disk_type     = var.disk_type
+    image_type    = "UBUNTU_CONTAINERD"
+    oauth_scopes  = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
-    image_type = "UBUNTU_CONTAINERD"
   }
-
-  initial_node_count = 1
+  
+  # Optionally, you can define upgrade_settings or other parameters if required.
 }
+
