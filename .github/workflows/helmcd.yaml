@@ -59,6 +59,14 @@ jobs:
           GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
         run: |
           terraform import google_container_cluster.primary projects/onyx-seeker-451213-q9/locations/us-central1/clusters/cat-gifs-cluster || echo "Cluster already imported"
+      
+      # 7.1. Terraform Import Node Pool (import existing node pool into state)
+      - name: Terraform Import Node Pool
+        working-directory: terraform
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          terraform import google_container_node_pool.primary_nodes projects/onyx-seeker-451213-q9/locations/us-central1/clusters/cat-gifs-cluster/nodePools/cat-gifs-node-pool || echo "Node pool already imported"
 
       # 8. Terraform Apply
       - name: Terraform Apply
