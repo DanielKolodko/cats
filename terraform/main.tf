@@ -25,6 +25,9 @@ resource "google_container_cluster" "primary" {
       issue_client_certificate = false
     }
   }
+
+  # Set the master version explicitly so we can reference it in the node pool.
+  master_version = var.master_version
 }
 
 resource "google_container_node_pool" "primary_nodes" {
@@ -34,21 +37,21 @@ resource "google_container_node_pool" "primary_nodes" {
 
   initial_node_count = 1
 
+  # Set node_version explicitly using the cluster's master_version.
+  node_version = google_container_cluster.primary.master_version
+
   node_config {
-    machine_type  = var.machine_type
-    disk_size_gb  = var.disk_size_gb
-    disk_type     = var.disk_type
-    image_type    = "UBUNTU_CONTAINERD"
-    oauth_scopes  = [
+    machine_type = var.machine_type
+    disk_size_gb = var.disk_size_gb
+    disk_type    = var.disk_type
+    image_type   = "UBUNTU_CONTAINERD"
+    oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
   }
 
-  # Adding an upgrade_settings block can help satisfy some API requirements
   upgrade_settings {
     max_surge       = 1
     max_unavailable = 0
   }
 }
-
-
