@@ -54,4 +54,14 @@ resource "google_container_node_pool" "primary_nodes" {
     max_surge       = 1
     max_unavailable = 0
   }
+
+  # Ignore ephemeral changes in GKE-managed fields so Terraform won't attempt to remove them.
+  lifecycle {
+    ignore_changes = [
+      # Examples of fields GKE often auto-sets or modifies:
+      node_config[0].kubelet_config,
+      node_config[0].resource_labels,
+      node_config[0].tags,
+    ]
+  }
 }
