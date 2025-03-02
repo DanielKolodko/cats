@@ -139,7 +139,7 @@ jobs:
       - name: Deploy via Helm
         run: |
           # Add your remote Helm repository that hosts your chart
-          helm repo add helmcatrepo https://danielkolodko.github.io/helm/helm || helm repo update
+          helm repo add helmcatrepo https://danielkolodko.github.io/helm || helm repo update
           helm repo update
           helm upgrade --install my-release helmcatrepo/cat-gifs --namespace default --wait
 
