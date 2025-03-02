@@ -52,39 +52,47 @@ jobs:
           GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
         run: terraform plan
 
-      # 7. Terraform Apply
+      # 7. Terraform Import Cluster (import existing cluster into state)
+      - name: Terraform Import Cluster
+        working-directory: terraform
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          terraform import google_container_cluster.primary projects/onyx-seeker-451213-q9/locations/us-central1/clusters/cat-gifs-cluster || echo "Cluster already imported"
+
+      # 8. Terraform Apply
       - name: Terraform Apply
         working-directory: terraform
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
         run: terraform apply -auto-approve
 
-      # 8. Build the Docker image for your app
+      # 9. Build the Docker image for your app
       - name: Build Docker image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/cat-gifs-app:latest .
 
-      # 9. Log in to Docker Hub
+      # 10. Log in to Docker Hub
       - name: Log in to Docker Hub
         run: |
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      # 10. Push the Docker image to Docker Hub
+      # 11. Push the Docker image to Docker Hub
       - name: Push Docker image
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/cat-gifs-app:latest
-      
-      # 11. Install gke-gcloud-auth-plugin so kubectl can use it
+
+      # 12. Install gke-gcloud-auth-plugin so kubectl can use it
       - name: Install gke-gcloud-auth-plugin
         run: |
           gcloud components install gke-gcloud-auth-plugin --quiet
-      
-      # 12. Configure GKE credentials (generate kubeconfig dynamically)
+
+      # 13. Configure GKE credentials (generate kubeconfig dynamically)
       - name: Configure GKE credentials
         run: |
           gcloud container clusters get-credentials cat-gifs-cluster --region us-central1 --project onyx-seeker-451213-q9
-      
-      # 13. Create Docker Registry Secret for image pulling
+
+      # 14. Create Docker Registry Secret for image pulling
       - name: Create Docker Registry Secret
         run: |
           kubectl create secret docker-registry regcred \
@@ -92,27 +100,19 @@ jobs:
             --docker-username="${{ secrets.DOCKER_USERNAME }}" \
             --docker-password="${{ secrets.DOCKER_TOKEN }}" \
             --docker-email="${{ secrets.DOCKER_EMAIL }}" \
-            --namespace=default || echo "Secret already exists" 
+            --namespace=default || echo "Secret already exists"
 
-      # 14. (Optional) Create ConfigMap for DB dump if using a seed-job that relies on it
+      # 15. (Optional) Create ConfigMap for DB dump if using seed-job that relies on it
       - name: Create ConfigMap for DB Dump
         run: |
           kubectl create configmap db-dump-config --from-file=dump.sql --namespace=default || echo "ConfigMap already exists"
 
-      # 15. Install Helm
-      - name: Install Helm
-        run: |
-          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-          chmod 700 get_helm.sh
-          ./get_helm.sh
-
-      # 16. Add the remote Helm repository and deploy the Helm chart
+      # 16. Deploy your application to Kubernetes using your manifests or Helm
       - name: Deploy via Helm
         run: |
-          # Add (or update) your remote Helm repository (adjust URL as needed)
+          # Add your remote Helm repository that hosts your chart
           helm repo add helmcatrepo https://danielkolodko.github.io/helm/helm || helm repo update
           helm repo update
-          # Deploy or upgrade the release from the remote repo.
           helm upgrade --install my-release helmcatrepo/cat-gifs --namespace default --wait
 
       # 17. Seed the Database using the Seed Job
