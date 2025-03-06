@@ -141,7 +141,7 @@ jobs:
           # Add your remote Helm repository that hosts your chart
           helm repo add helmcatrepo https://danielkolodko.github.io/helm || helm repo update
           helm repo update
-          helm upgrade --install my-release helmcatrepo/cat-gifs --namespace default --wait
+          helm upgrade --install my-release helmcatrepo/cat-gifs --namespace default --wait --history-max=2
 
       # 17. Seed the Database using the Seed Job
       - name: Seed Database
