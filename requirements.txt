@@ -4,3 +4,4 @@ SQLAlchemy<2.0
 Werkzeug==2.3.3 # Downgrade Werkzeug to 2.1.0
 PyMySQL
 cryptography
+prometheus_client==0.16.0
