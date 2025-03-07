@@ -60,5 +60,5 @@ jobs:
       # 8. Push Docker images
       - name: Push Docker Images
         run: |
-          docker push cat-gifs-app:latest
-          docker push cat-gifs-app:${{ env.IMAGE_TAG }}
+          docker push danielkolodko/cat-gifs-app:latest
+          docker push danielkolodko/cat-gifs-app:${{ env.IMAGE_TAG }}
