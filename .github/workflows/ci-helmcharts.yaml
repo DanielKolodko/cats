@@ -1,0 +1,51 @@
+name: Package and Push Helm Chart
+
+on:
+  push:
+    tags:
+      - 'v*'      # Trigger when pushing tags like v1.0.0
+  workflow_dispatch:
+
+jobs:
+  package-chart:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      # 2. Set up Helm
+      - name: Set up Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      # 3. Extract version from tag and update Chart.yaml
+      - name: Update Chart Version
+        id: update_version
+        run: |
+          # Extract tag name (e.g. "v1.2.3") and remove the "v" prefix
+          TAG_VERSION=${GITHUB_REF##*/}
+          CHART_VERSION=${TAG_VERSION#v}
+          echo "Using chart version: ${CHART_VERSION}"
+          # Update the version field in Chart.yaml using sed (GNU sed syntax)
+          sed -i "s/^version:.*/version: \"${CHART_VERSION}\"/" Chart.yaml
+          # Optionally update the appVersion as well
+          sed -i "s/^appVersion:.*/appVersion: \"${CHART_VERSION}\"/" Chart.yaml
+          # Print out updated Chart.yaml for debugging
+          cat Chart.yaml
+
+      # 4. Package the Helm chart
+      - name: Package Helm Chart
+        run: helm package .
+
+      # 5. Generate or update the index.yaml file with the GCS bucket URL
+      - name: Update Helm Repository Index
+        run: |
+          helm repo index . --url https://storage.googleapis.com/helm-charts1306
+
+      # 6. Upload the chart package and index.yaml to your GCS bucket
+      - name: Upload Chart to GCS Bucket
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          gsutil -m cp *.tgz index.yaml gs://helm-charts1306

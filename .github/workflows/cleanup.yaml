@@ -1,0 +1,65 @@
+name: Cleanup Docker Images and Helm Charts
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight UTC
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      # Docker Cleanup
+      - name: Cleanup Old Docker Images
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          REPO="cat-gifs-app"
+          BASE_URL="https://hub.docker.com/v2/repositories/${DOCKERHUB_USERNAME}/${REPO}/tags"
+          echo "Fetching tags from Docker Hub for repository ${DOCKERHUB_USERNAME}/${REPO}..."
+          # Fetch tags (assumes up to 100 tags; adjust pagination if needed)
+          TAGS=$(curl -s -H "Authorization: JWT ${DOCKERHUB_TOKEN}" "${BASE_URL}/?page_size=100" | jq -r '.results[] | "\(.name) \(.last_updated)"')
+          NOW=$(date +%s)
+          THIRTY_DAYS=$((30*24*3600))
+          echo "Current time (epoch): $NOW"
+          echo "$TAGS" | while read -r line; do
+            TAG=$(echo "$line" | awk '{print $1}')
+            UPDATED=$(echo "$line" | awk '{print $2}')
+            UPDATED_SECONDS=$(date -d "$UPDATED" +%s)
+            AGE=$((NOW - UPDATED_SECONDS))
+            if [ $AGE -gt $THIRTY_DAYS ]; then
+              echo "Deleting tag '$TAG' (last updated: $UPDATED)"
+              curl -s -X DELETE -H "Authorization: JWT ${DOCKERHUB_TOKEN}" "${BASE_URL}/${TAG}/"
+            else
+              echo "Keeping tag '$TAG' (last updated: $UPDATED)"
+            fi
+          done
+
+      # Helm Chart Cleanup (GCS Bucket)
+      - name: Cleanup Old Helm Charts in GCS Bucket
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          BUCKET="helm-charts1306"  # Replace with your actual bucket name
+          echo "Listing chart packages in gs://$BUCKET"
+          # List files with their timestamps; the output format is: "TIMESTAMP SIZE URL"
+          gsutil ls -l gs://$BUCKET | grep '\.tgz$' > chart_list.txt
+          NOW=$(date +%s)
+          THIRTY_DAYS=$((30*24*3600))
+          while read -r line; do
+            TIMESTAMP=$(echo "$line" | awk '{print $1}')
+            FILE=$(echo "$line" | awk '{print $3}')
+            # Convert timestamp (in ISO format) to epoch seconds
+            FILE_TIME=$(date -d "$TIMESTAMP" +%s)
+            AGE=$((NOW - FILE_TIME))
+            if [ $AGE -gt $THIRTY_DAYS ]; then
+              echo "Deleting old chart package: $FILE (timestamp: $TIMESTAMP)"
+              gsutil rm "$FILE"
+            else
+              echo "Keeping chart package: $FILE (timestamp: $TIMESTAMP)"
+            fi
+          done < chart_list.txt
