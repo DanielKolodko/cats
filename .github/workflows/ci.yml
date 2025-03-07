@@ -33,12 +33,12 @@ jobs:
         run: |
           echo "Running tests... (no tests defined)"
 
-      # 5. Build Docker image
+      # 5. Build Docker image using your Docker Hub namespace
       - name: Build Docker image
         run: |
-          docker build --no-cache -t cat-gifs-app:latest .
+          docker build --no-cache -t danielkolodko/cat-gifs-app:latest .
 
-      # 6. Determine image tag (version)
+      # 6. Determine image tag (version) and tag the image
       - name: Tag Docker Image
         id: docker_tags
         run: |
@@ -50,7 +50,7 @@ jobs:
           fi
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
           echo "Tagging image as: ${IMAGE_TAG}"
-          docker tag cat-gifs-app:latest cat-gifs-app:${IMAGE_TAG}
+          docker tag danielkolodko/cat-gifs-app:latest danielkolodko/cat-gifs-app:${IMAGE_TAG}
 
       # 7. Log in to Docker Hub
       - name: Log in to Docker Hub
