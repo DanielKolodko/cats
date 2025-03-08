@@ -14,7 +14,7 @@ jobs:
       - name: Checkout Cats Repository
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0  # To have full history and access tags
+          fetch-depth: 0  # Ensure full history to access tags
 
       # 2. Extract Chart Version from the Git tag
       - name: Extract Chart Version
@@ -32,10 +32,10 @@ jobs:
         with:
           repository: DanielKolodko/helm
           ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.HELM_GITHUB_TOKEN }}
           path: helm-main
 
-      # 4. Update Chart.yaml in helm-main with the new version and push changes
+      # 4. Update the Chart.yaml in the Helm repo with the new version and push changes
       - name: Update Chart Version in Helm Repo Main
         working-directory: helm-main
         run: |
@@ -62,7 +62,7 @@ jobs:
         with:
           repository: DanielKolodko/helm
           ref: gh-pages
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.HELM_GITHUB_TOKEN }}
           path: helm-gh-pages
 
       # 7. Copy the new packaged chart from helm-main to helm-gh-pages
