@@ -12,6 +12,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
+      # Debug: Print the service account email from the GCP credentials (remove after debugging)
+      - name: Print Service Account Email
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          echo "Service Account Email:"
+          cat $GOOGLE_APPLICATION_CREDENTIALS | jq -r '.client_email'
+
       # Docker Cleanup
       - name: Cleanup Old Docker Images
         env:
