@@ -18,7 +18,7 @@ jobs:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
-          REPO="cat-gifs-app"
+          REPO="danielkolodko/cat-gifs-app"
           BASE_URL="https://hub.docker.com/v2/repositories/${DOCKERHUB_USERNAME}/${REPO}/tags"
           echo "Fetching tags from Docker Hub for repository ${DOCKERHUB_USERNAME}/${REPO}..."
           # Fetch tags (assumes up to 100 tags; adjust pagination if needed)
