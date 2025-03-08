@@ -3,7 +3,7 @@ name: Package and Push Helm Chart
 on:
   push:
     tags:
-      - ['v*']      # Trigger when pushing tags like v1.0.0
+      - 'v*'      # Trigger when pushing tags like v1.0.0
   workflow_dispatch:
 
 jobs:
@@ -20,6 +20,10 @@ jobs:
       - name: Extract Chart Version
         id: extract_version
         run: |
+          if [[ "${GITHUB_REF}" != refs/tags/* ]]; then
+            echo "Error: This workflow should only run on tag pushes. Current ref: ${GITHUB_REF}"
+            exit 1
+          fi
           # Expecting tag format "v1.2.3"
           TAG_VERSION=${GITHUB_REF##*/}
           CHART_VERSION=${TAG_VERSION#v}
