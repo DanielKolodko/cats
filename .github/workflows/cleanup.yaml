@@ -20,17 +20,15 @@ jobs:
           echo "Service Account Email:"
           cat $GOOGLE_APPLICATION_CREDENTIALS | jq -r '.client_email'
 
-      # Docker Cleanup
+      # Docker Cleanup (unchanged)
       - name: Cleanup Old Docker Images
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
-          # Use the repository name as registered on Docker Hub (without the username prefix)
           REPO="cat-gifs-app"
           BASE_URL="https://hub.docker.com/v2/repositories/${DOCKERHUB_USERNAME}/${REPO}/tags"
           echo "Fetching tags from Docker Hub for repository ${DOCKERHUB_USERNAME}/${REPO}..."
-          # Fetch tags (assumes up to 100 tags; adjust pagination if needed)
           TAGS=$(curl -s -H "Authorization: JWT ${DOCKERHUB_TOKEN}" "${BASE_URL}/?page_size=100" | jq -r '.results // [] | .[] | "\(.name) \(.last_updated)"')
           if [ -z "$TAGS" ]; then
             echo "No tags found for repository ${DOCKERHUB_USERNAME}/${REPO}."
@@ -52,27 +50,46 @@ jobs:
             fi
           done
 
-      # Helm Chart Cleanup (GCS Bucket)
-      - name: Cleanup Old Helm Charts in GCS Bucket
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+      # Helm Chart Cleanup from GitHub Pages repo (gh-pages branch)
+      - name: Checkout Helm Repo gh-pages
+        uses: actions/checkout@v2
+        with:
+          repository: DanielKolodko/helm
+          ref: gh-pages
+          token: ${{ secrets.HELM_GITHUB_TOKEN }}
+          path: helm-gh-pages
+
+      - name: Cleanup Old Helm Charts in gh-pages
+        working-directory: helm-gh-pages
         run: |
-          BUCKET="helm-charts1306"  # Replace with your actual bucket name
-          echo "Listing chart packages in gs://$BUCKET"
-          # List files with their timestamps; the output format is: "TIMESTAMP SIZE URL"
-          gsutil ls -l gs://$BUCKET | grep '\.tgz$' > chart_list.txt
           NOW=$(date +%s)
           THIRTY_DAYS=$((30*24*3600))
-          while read -r line; do
-            TIMESTAMP=$(echo "$line" | awk '{print $1}')
-            FILE=$(echo "$line" | awk '{print $3}')
-            # Convert timestamp (in ISO format) to epoch seconds
-            FILE_TIME=$(date -d "$TIMESTAMP" +%s)
-            AGE=$((NOW - FILE_TIME))
-            if [ $AGE -gt $THIRTY_DAYS ]; then
-              echo "Deleting old chart package: $FILE (timestamp: $TIMESTAMP)"
-              gsutil rm "$FILE"
-            else
-              echo "Keeping chart package: $FILE (timestamp: $TIMESTAMP)"
+          for file in *.tgz; do
+            if [ -f "$file" ]; then
+              # Get the commit timestamp for the file (epoch seconds)
+              COMMIT_DATE=$(git log -1 --format=%ct "$file")
+              AGE=$((NOW - COMMIT_DATE))
+              if [ $AGE -gt $THIRTY_DAYS ]; then
+                  echo "Deleting $file (commit timestamp: $COMMIT_DATE, age: $AGE seconds)"
+                  git rm "$file"
+                  rm "$file"
+              else
+                  echo "Keeping $file (commit timestamp: $COMMIT_DATE, age: $AGE seconds)"
+              fi
             fi
-          done < chart_list.txt
+          done
+
+      - name: Update Helm Repository Index in gh-pages
+        working-directory: helm-gh-pages
+        run: |
+          helm repo index . --url https://danielkolodko.github.io/helm
+          ls -l
+
+      - name: Commit and Push to gh-pages
+        working-directory: helm-gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Clean up old Helm chart packages" || echo "No changes to commit"
+          git push
