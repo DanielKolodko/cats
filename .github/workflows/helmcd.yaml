@@ -142,7 +142,7 @@ jobs:
           helm repo add myrepo https://danielkolodko.github.io/helm || helm repo update
           helm repo update
           # Upgrade or install the release using the 'cats' chart from the repository
-          helm upgrade --install my-cats-release myrepo/cats --version 0.2.0 --namespace default --wait --history-max=1
+          helm upgrade --install my-cats-release myrepo/cats --version 0.2.0 --namespace default --wait --history-max=1 --force
 
       # 17. Seed the Database using the Seed Job
       - name: Seed Database
