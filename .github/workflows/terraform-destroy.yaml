@@ -17,10 +17,17 @@ jobs:
         with:
           terraform_version: latest
 
+      - name: Check for GCP Service Account Key
+        run: |
+          if [ -z "${{ secrets.GCP_SA_KEY }}" ]; then
+            echo "Error: GCP_SA_KEY secret is not available. Please ensure it's set in repository secrets."
+            exit 1
+          fi
+
       - name: Setup Google Cloud credentials
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Terraform Init
         run: terraform init
