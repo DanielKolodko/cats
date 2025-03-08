@@ -10,58 +10,79 @@ jobs:
   package-chart:
     runs-on: ubuntu-latest
     steps:
-      # 1. Checkout the cats repository to get the tag info
+      # 1. Checkout the cats repository to extract the tag version
       - name: Checkout Cats Repository
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0  # Ensure full history to access tags
+          fetch-depth: 0  # To have full history and access tags
 
-      # 2. Extract chart version from the Git tag and set an environment variable
+      # 2. Extract Chart Version from the Git tag
       - name: Extract Chart Version
         id: extract_version
         run: |
-          # Expecting tag format like "v1.2.3"
+          # Expecting tag format "v1.2.3"
           TAG_VERSION=${GITHUB_REF##*/}
           CHART_VERSION=${TAG_VERSION#v}
           echo "Chart version: ${CHART_VERSION}"
           echo "CHART_VERSION=${CHART_VERSION}" >> $GITHUB_ENV
 
-      # 3. Checkout the separate Helm chart repository (which serves as your Helm repo via gh-pages)
-      - name: Checkout Helm Chart Repository
+      # 3. Checkout the Helm repository main branch (chart source)
+      - name: Checkout Helm Repo Main (Chart Source)
+        uses: actions/checkout@v2
+        with:
+          repository: DanielKolodko/helm
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: helm-main
+
+      # 4. Update Chart.yaml in helm-main with the new version and push changes
+      - name: Update Chart Version in Helm Repo Main
+        working-directory: helm-main
+        run: |
+          echo "Updating Chart.yaml with version: $CHART_VERSION"
+          sed -i "s/^version:.*/version: \"${CHART_VERSION}\"/" Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${CHART_VERSION}\"/" Chart.yaml
+          cat Chart.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Chart.yaml
+          git commit -m "Update chart to version ${CHART_VERSION}" || echo "No changes to commit"
+          git push
+
+      # 5. Package the Helm chart from helm-main (creates .tgz package)
+      - name: Package Helm Chart
+        working-directory: helm-main
+        run: |
+          helm package .
+          ls -l *.tgz
+
+      # 6. Checkout the Helm repository gh-pages branch (packaged charts)
+      - name: Checkout Helm Repo gh-pages
         uses: actions/checkout@v2
         with:
           repository: DanielKolodko/helm
           ref: gh-pages
           token: ${{ secrets.GITHUB_TOKEN }}
-          path: helm-repo
+          path: helm-gh-pages
 
-      # 4. Update the Chart.yaml in the Helm repo with the new version
-      - name: Update Chart Version in Helm Repo
+      # 7. Copy the new packaged chart from helm-main to helm-gh-pages
+      - name: Copy Packaged Chart to gh-pages
         run: |
-          cd helm-repo
-          echo "Updating Chart.yaml with version: $CHART_VERSION"
-          sed -i "s/^version:.*/version: \"${CHART_VERSION}\"/" Chart.yaml
-          sed -i "s/^appVersion:.*/appVersion: \"${CHART_VERSION}\"/" Chart.yaml
-          cat Chart.yaml
+          cp helm-main/*.tgz helm-gh-pages/
 
-      # 5. Package the Helm chart in the Helm repo
-      - name: Package Helm Chart
+      # 8. Update the Helm repository index in helm-gh-pages
+      - name: Update Helm Repository Index in gh-pages
+        working-directory: helm-gh-pages
         run: |
-          cd helm-repo
-          helm package .
-
-      # 6. Update the Helm repository index (using your GitHub Pages URL)
-      - name: Update Helm Repository Index
-        run: |
-          cd helm-repo
           helm repo index . --url https://danielkolodko.github.io/helm
+          ls -l
 
-      # 7. Commit and push the updated Helm repo (chart package and index) back to gh-pages
-      - name: Commit and Push Helm Repo Changes
+      # 9. Commit and push the changes to the gh-pages branch
+      - name: Commit and Push to gh-pages
+        working-directory: helm-gh-pages
         run: |
-          cd helm-repo
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Update Helm chart to version ${CHART_VERSION}" || echo "No changes to commit"
+          git commit -m "Update Helm repo with chart version ${CHART_VERSION}" || echo "No changes to commit"
           git push
