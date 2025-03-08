@@ -10,42 +10,52 @@ jobs:
   package-chart:
     runs-on: ubuntu-latest
     steps:
-      # 1. Checkout the repository
-      - name: Checkout Repository
+      # 1. Checkout the cats repository (your main project)
+      - name: Checkout Cats Repository
         uses: actions/checkout@v2
 
-      # 2. Set up Helm
-      - name: Set up Helm
+      # 2. Build or update your Helm chart package from the cats repo.
+      #    Assume your chart is in the "helm" directory of this repo.
+      - name: Package Helm Chart
         run: |
-          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-
-      # 3. Extract version from tag and update Chart.yaml
-      - name: Update Chart Version
-        id: update_version
-        run: |
-          # Extract tag name (e.g. "v1.2.3") and remove the "v" prefix
+          cd helm
+          # Extract version from tag, update Chart.yaml accordingly (optional)
           TAG_VERSION=${GITHUB_REF##*/}
           CHART_VERSION=${TAG_VERSION#v}
           echo "Using chart version: ${CHART_VERSION}"
-          # Update the version field in Chart.yaml using sed (GNU sed syntax)
           sed -i "s/^version:.*/version: \"${CHART_VERSION}\"/" Chart.yaml
-          # Optionally update the appVersion as well
           sed -i "s/^appVersion:.*/appVersion: \"${CHART_VERSION}\"/" Chart.yaml
-          # Print out updated Chart.yaml for debugging
-          cat Chart.yaml
+          cd ..
+          # Package the chart (resulting package will be at the repository root)
+          helm package helm
 
-      # 4. Package the Helm chart
-      - name: Package Helm Chart
-        run: helm package .
+      # 3. Checkout the separate Helm repo (hosting your charts on GitHub Pages)
+      - name: Checkout Helm Repo
+        uses: actions/checkout@v2
+        with:
+          repository: DanielKolodko/helm  # Replace with your Helm repository name
+          ref: gh-pages
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: helm-repo
 
-      # 5. Generate or update the index.yaml file with the GCS bucket URL
+      # 4. Copy the new chart package into the Helm repo directory
+      - name: Copy Chart Package to Helm Repo
+        run: |
+          # Assumes the new package is named "cats-<version>.tgz" (or adjust accordingly)
+          cp *.tgz helm-repo/
+
+      # 5. Update the Helm repository index
       - name: Update Helm Repository Index
+        working-directory: helm-repo
         run: |
-          helm repo index . --url https://storage.googleapis.com/helm-charts1306
+          helm repo index . --url https://danielkolodko.github.io/helm
 
-      # 6. Upload the chart package and index.yaml to your GCS bucket
-      - name: Upload Chart to GCS Bucket
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+      # 6. Commit and push the updated Helm repo
+      - name: Commit and Push Helm Repo
+        working-directory: helm-repo
         run: |
-          gsutil -m cp *.tgz index.yaml gs://helm-charts1306
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Update Helm chart to version ${CHART_VERSION}" || echo "No changes to commit"
+          git push
