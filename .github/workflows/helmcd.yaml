@@ -143,9 +143,3 @@ jobs:
           helm repo update
           # Upgrade or install the release using the 'cats' chart from the repository
           helm upgrade --install my-cats-release myrepo/cats --version 0.2.0 --namespace default --wait --history-max=1 --force
-
-      # 17. Seed the Database using the Seed Job
-      - name: Seed Database
-        run: |
-          kubectl apply -f k8s/seed-job.yaml
-          kubectl wait --for=condition=complete --timeout=120s job/seed-db-job || kubectl logs job/seed-db-job
