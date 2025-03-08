@@ -3,7 +3,7 @@ name: Package and Push Helm Chart
 on:
   push:
     tags:
-      - 'v*'      # Trigger when pushing tags like v1.0.0
+      - ['v*']      # Trigger when pushing tags like v1.0.0
   workflow_dispatch:
 
 jobs:
