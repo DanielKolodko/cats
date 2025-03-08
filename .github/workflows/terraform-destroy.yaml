@@ -8,9 +8,6 @@ jobs:
     name: 'Terraform Destroy GCP Infrastructure'
     runs-on: ubuntu-latest
 
-    env:
-      GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,5 +27,3 @@ jobs:
 
       - name: Terraform Destroy
         run: terraform destroy -auto-approve
-
-#terraform destroy removes all infrastructure defined in your Terraform state. Always confirm this is your intended action before running.
