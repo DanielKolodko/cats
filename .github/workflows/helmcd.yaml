@@ -120,21 +120,6 @@ jobs:
         run: |
           gcloud container clusters get-credentials cat-gifs-cluster --region us-central1 --project onyx-seeker-451213-q9
 
-      # 14. Create Docker Registry Secret for image pulling
-      - name: Create Docker Registry Secret
-        run: |
-          kubectl create secret docker-registry regcred \
-            --docker-server="${{ secrets.DOCKER_SERVER }}" \
-            --docker-username="${{ secrets.DOCKER_USERNAME }}" \
-            --docker-password="${{ secrets.DOCKER_TOKEN }}" \
-            --docker-email="${{ secrets.DOCKER_EMAIL }}" \
-            --namespace=default || echo "Secret already exists"
-
-      # 15. (Optional) Create ConfigMap for DB dump if using seed-job that relies on it
-      - name: Create ConfigMap for DB Dump
-        run: |
-          kubectl create configmap db-dump-config --from-file=dump.sql --namespace=default || echo "ConfigMap already exists"
-
       # 16. Deploy your application to Kubernetes using Helm
       - name: Deploy via Helm
         run: |
