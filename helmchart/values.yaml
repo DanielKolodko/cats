@@ -18,6 +18,7 @@ flask:
   config:
     FLASK_APP: "app.py"
     FLASK_ENV: "production"
+    SQLALCHEMY_DATABASE_URI: "mysql+pymysql://catuser:catpassword@catshelm-helmchart-mysql-service/catgifs"
 
 service:
   flask:
@@ -34,3 +35,4 @@ cronjob:
 
 pvc:
   storage: 5Gi
+
