@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "helmchart.fullname" . }}-seed-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: seed
+        image: "{{ .Values.image.mysql.repository }}:{{ .Values.image.mysql.tag }}"
+        command:
+          - sh
+          - -c
+          - |
+            mysql -h {{ include "helmchart.mysqlService" . }} -u {{ .Values.mysql.user }} -p{{ .Values.mysql.password }} {{ .Values.mysql.database }} < /dump/dump.sql
+        volumeMounts:
+          - name: dump-volume
+            mountPath: /dump
+      restartPolicy: OnFailure
+      volumes:
+      - name: dump-volume
+        configMap:
+          name: {{ include "helmchart.fullname" . }}-db-dump-config

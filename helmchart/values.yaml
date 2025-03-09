@@ -1,0 +1,36 @@
+replicaCount: 1
+
+image:
+  flask:
+    repository: danielkolodko/cat-gifs-app
+    tag: latest
+  mysql:
+    repository: mysql
+    tag: "8.0"
+
+mysql:
+  rootPassword: eroot
+  database: catgifs
+  user: catuser
+  password: catpassword
+
+flask:
+  config:
+    FLASK_APP: "app.py"
+    FLASK_ENV: "production"
+
+service:
+  flask:
+    type: LoadBalancer
+    port: 80
+    targetPort: 5000
+  mysql:
+    port: 3306
+    targetPort: 3306
+
+cronjob:
+  schedule: "0 3 * * *"
+  image: google/cloud-sdk:latest
+
+pvc:
+  storage: 5Gi

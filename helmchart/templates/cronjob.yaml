@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "helmchart.fullname" . }}-mysql-backup
+spec:
+  schedule: {{ .Values.cronjob.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: mysql-backup
+            image: {{ .Values.cronjob.image | quote }}
+            env:
+              - name: MYSQL_HOST
+                value: {{ include "helmchart.mysqlService" . }}
+              - name: MYSQL_USER
+                value: {{ .Values.mysql.user | quote }}
+              - name: MYSQL_PASSWORD
+                value: {{ .Values.mysql.password | quote }}
+              - name: MYSQL_DATABASE
+                value: {{ .Values.mysql.database | quote }}
+              - name: BUCKET_NAME
+                value: my-sql-db-backup-bucket
+            command:
+              - /bin/sh
+              - -c
+              - |
+                DATE=$(date +"%Y-%m-%d-%H-%M")
+                mysqldump -h$MYSQL_HOST -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE > /tmp/db-backup-$DATE.sql
+                gsutil cp /tmp/db-backup-$DATE.sql gs://$BUCKET_NAME/db-backup-$DATE.sql
+          restartPolicy: OnFailure

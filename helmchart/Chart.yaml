@@ -1,0 +1,6 @@
+apiVersion: v2
+name: helmchart
+description: A Helm chart for deploying a Flask app with MySQL backup, seeding, and scheduled backups.
+type: application
+version: 0.1.0
+appVersion: "1.0"
