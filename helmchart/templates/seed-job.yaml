@@ -2,16 +2,27 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "helmchart.fullname" . }}-seed-job
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   template:
+    metadata:
+      labels:
+        app: {{ include "helmchart.name" . }}-seed-job
     spec:
       containers:
       - name: seed
-        image: "{{ .Values.image.mysql.repository }}:{{ .Values.image.mysql.tag }}"
+        image: google/cloud-sdk:latest
         command:
           - sh
           - -c
           - |
+            # Download the SQL dump from the GCS bucket
+            gsutil cp gs://my-sql-db-backup-bucket/dump.sql /dump/dump.sql && \
+            # Install the MySQL client (assumes Debian-based image)
+            apt-get update && apt-get install -y mysql-client && \
+            # Restore the database
             mysql -h {{ include "helmchart.mysqlService" . }} -u {{ .Values.mysql.user }} -p{{ .Values.mysql.password }} {{ .Values.mysql.database }} < /dump/dump.sql
         volumeMounts:
           - name: dump-volume
@@ -19,5 +30,4 @@ spec:
       restartPolicy: OnFailure
       volumes:
       - name: dump-volume
-        configMap:
-          name: {{ include "helmchart.fullname" . }}-db-dump-config
+        emptyDir: {}
