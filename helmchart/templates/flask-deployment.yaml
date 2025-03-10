@@ -2,8 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "helmchart.fullname" . }}-flask-deployment
+  labels:
+    app: {{ include "helmchart.name" . }}-flask
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.flask.replicaCount }}
   selector:
     matchLabels:
       app: {{ include "helmchart.name" . }}-flask
@@ -17,22 +19,21 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       containers:
-      - name: flask-app
-        image: "{{ .Values.image.flask.repository }}:{{ .Values.image.flask.tag }}"
-        ports:
-          - containerPort: {{ .Values.service.flask.targetPort }}
-        env:
-          - name: FLASK_APP
-            valueFrom:
-              configMapKeyRef:
-                name: {{ include "helmchart.fullname" . }}-flask-config
-                key: FLASK_APP
-          - name: FLASK_ENV
-            valueFrom:
-              configMapKeyRef:
-                name: {{ include "helmchart.fullname" . }}-flask-config
-                key: FLASK_ENV
-          - name: SQLALCHEMY_DATABASE_URI
-            value: "mysql+pymysql://{{ .Values.mysql.user }}:{{ .Values.mysql.password }}@{{ include "helmchart.mysqlService" . }}/{{ .Values.mysql.database }}"
-      imagePullSecrets:
-        - name: regcred
+        - name: flask-app
+          image: "{{ .Values.flask.image.repository }}:{{ .Values.flask.image.tag }}"
+          ports:
+            - containerPort: 5000
+          env:
+            - name: FLASK_APP
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "helmchart.fullname" . }}-flask-config
+                  key: FLASK_APP
+            - name: FLASK_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "helmchart.fullname" . }}-flask-config
+                  key: FLASK_ENV
+            - name: SQLALCHEMY_DATABASE_URI
+              value: {{ .Values.flask.databaseUri | quote }}
+

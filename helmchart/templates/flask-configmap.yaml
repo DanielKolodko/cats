@@ -2,6 +2,8 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "helmchart.fullname" . }}-flask-config
+  labels:
+    app: {{ include "helmchart.name" . }}-flask
 data:
-  FLASK_APP: {{ .Values.flask.config.FLASK_APP | quote }}
-  FLASK_ENV: {{ .Values.flask.config.FLASK_ENV | quote }}
+  FLASK_APP: {{ .Values.flask.app | quote }}
+  FLASK_ENV: {{ .Values.flask.env | quote }}

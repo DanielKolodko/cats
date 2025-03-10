@@ -2,11 +2,11 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "helmchart.fullname" . }}-mysql-pvc
-  annotations:
-    helm.sh/resource-policy: keep
+  labels:
+    app: {{ include "helmchart.name" . }}-mysql
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: {{ .Values.pvc.storage }}
+      storage: {{ .Values.mysql.storageSize }}

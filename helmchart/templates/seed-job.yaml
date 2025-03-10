@@ -1,33 +1,33 @@
+{{- if .Values.seedJob.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "helmchart.fullname" . }}-seed-job
+  name: {{ include "helmchart.fullname" . }}-seed-db-job
+  labels:
+    app: {{ include "helmchart.name" . }}-seed-job
   annotations:
     "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   template:
-    metadata:
-      labels:
-        app: {{ include "helmchart.name" . }}-seed-job
     spec:
-      containers:
-      - name: seed
-        image: google/cloud-sdk:latest
-        command:
-          - sh
-          - -c
-          - |
-            # Download the SQL dump from the GCS bucket
-            gsutil cp gs://my-sql-db-backup-bucket/dump.sql /dump/dump.sql && \
-            # Install the MySQL client (assumes Debian-based image)
-            apt-get update && apt-get install -y mysql-client && \
-            # Restore the database
-            mysql -h {{ include "helmchart.mysqlService" . }} -u {{ .Values.mysql.user }} -p{{ .Values.mysql.password }} {{ .Values.mysql.database }} < /dump/dump.sql
-        volumeMounts:
-          - name: dump-volume
-            mountPath: /dump
       restartPolicy: OnFailure
+      containers:
+        - name: seed
+          image: "{{ .Values.seedJob.image.repository }}:{{ .Values.seedJob.image.tag }}"
+          command:
+            - "sh"
+            - "-c"
+            - >
+              mysql -h {{ .Values.seedJob.database.host }}
+                   -u {{ .Values.seedJob.database.user }}
+                   -p{{ .Values.seedJob.database.password }}
+                   {{ .Values.seedJob.database.name }} < /dump/dump.sql
+          volumeMounts:
+            - name: dump-volume
+              mountPath: /dump
       volumes:
-      - name: dump-volume
-        emptyDir: {}
+        - name: dump-volume
+          configMap:
+            name: {{ .Values.seedJob.configMapName }}
+{{- end }}

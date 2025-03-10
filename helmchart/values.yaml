@@ -1,38 +1,38 @@
-replicaCount: 1
-
-image:
-  flask:
+flask:
+  replicaCount: 1
+  image:
     repository: danielkolodko/cat-gifs-app
-    tag: latest
-  mysql:
-    repository: mysql
-    tag: "8.0"
+    tag: "latest"
+  serviceType: LoadBalancer
+
+  # Environment variables stored in the configMap
+  app: "app.py"
+  env: "production"
+
+  # Example SQLAlchemy URI
+  databaseUri: "mysql+pymysql://catuser:catpassword@helmchart-mysql-service/catgifs"
 
 mysql:
-  rootPassword: eroot
-  database: catgifs
-  user: catuser
-  password: catpassword
+  replicaCount: 1
+  image:
+    repository: mysql
+    tag: "8.0"
+  rootPassword: "eroot"
+  user: "catuser"
+  password: "catpassword"
+  database: "catgifs"
+  storageSize: "5Gi"
 
-flask:
-  config:
-    FLASK_APP: "app.py"
-    FLASK_ENV: "production"
-    SQLALCHEMY_DATABASE_URI: "mysql+pymysql://catuser:catpassword@catshelm-helmchart-mysql-service/catgifs"
+seedJob:
+  enabled: true
+  image:
+    repository: mysql
+    tag: "8.0"
+  database:
+    host: "helmchart-mysql-service"
+    user: "catuser"
+    password: "catpassword"
+    name: "catgifs"
 
-service:
-  flask:
-    type: LoadBalancer
-    port: 80
-    targetPort: 5000
-  mysql:
-    port: 3306
-    targetPort: 3306
-
-cronjob:
-  schedule: "0 3 * * *"
-  image: google/cloud-sdk:latest
-
-pvc:
-  storage: 5Gi
-
+  # Name of the ConfigMap holding your dump.sql
+  configMapName: "db-dump-config"

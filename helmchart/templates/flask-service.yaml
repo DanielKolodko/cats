@@ -2,11 +2,13 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "helmchart.fullname" . }}-flask-service
+  labels:
+    app: {{ include "helmchart.name" . }}-flask
 spec:
   selector:
     app: {{ include "helmchart.name" . }}-flask
   ports:
     - protocol: TCP
-      port: {{ .Values.service.flask.port }}
-      targetPort: {{ .Values.service.flask.targetPort }}
-  type: {{ .Values.service.flask.type }}
+      port: 80
+      targetPort: 5000
+  type: {{ .Values.flask.serviceType }}
