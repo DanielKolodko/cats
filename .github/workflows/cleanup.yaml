@@ -50,46 +50,28 @@ jobs:
             fi
           done
 
-      # Helm Chart Cleanup from GitHub Pages repo (gh-pages branch)
-      - name: Checkout Helm Repo gh-pages
-        uses: actions/checkout@v2
-        with:
-          repository: DanielKolodko/helm
-          ref: gh-pages
-          token: ${{ secrets.HELM_GITHUB_TOKEN }}
-          path: helm-gh-pages
-
-      - name: Cleanup Old Helm Charts in gh-pages
-        working-directory: helm-gh-pages
+      # Helm Chart Cleanup from Google Cloud Storage Bucket
+      - name: Cleanup Old Helm Charts in GCS Bucket
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
         run: |
           NOW=$(date +%s)
           THIRTY_DAYS=$((30*24*3600))
-          for file in *.tgz; do
-            if [ -f "$file" ]; then
-              # Get the commit timestamp for the file (epoch seconds)
-              COMMIT_DATE=$(git log -1 --format=%ct "$file")
-              AGE=$((NOW - COMMIT_DATE))
-              if [ $AGE -gt $THIRTY_DAYS ]; then
-                  echo "Deleting $file (commit timestamp: $COMMIT_DATE, age: $AGE seconds)"
-                  git rm "$file"
-                  rm "$file"
-              else
-                  echo "Keeping $file (commit timestamp: $COMMIT_DATE, age: $AGE seconds)"
-              fi
+          echo "Checking for Helm chart packages older than 30 days in gs://helm-charts1306/ ..."
+          # List detailed information about all .tgz files in the bucket
+          gsutil ls -l gs://helm-charts1306/*.tgz | grep -E '^\d' | while read -r line; do
+            # The output format is: <size> <date> <time> <URL>
+            FILE_SIZE=$(echo $line | awk '{print $1}')
+            FILE_DATE=$(echo $line | awk '{print $2}')
+            FILE_TIME=$(echo $line | awk '{print $3}')
+            FILE_URL=$(echo $line | awk '{print $4}')
+            # Convert the date and time to epoch seconds (assumes ISO8601, adjust if needed)
+            FILE_TIMESTAMP=$(date -d "${FILE_DATE} ${FILE_TIME}" +%s)
+            AGE=$((NOW - FILE_TIMESTAMP))
+            if [ $AGE -gt $THIRTY_DAYS ]; then
+              echo "Deleting $FILE_URL (age: $AGE seconds)"
+              gsutil rm "$FILE_URL"
+            else
+              echo "Keeping $FILE_URL (age: $AGE seconds)"
             fi
           done
-
-      - name: Update Helm Repository Index in gh-pages
-        working-directory: helm-gh-pages
-        run: |
-          helm repo index . --url https://danielkolodko.github.io/helm
-          ls -l
-
-      - name: Commit and Push to gh-pages
-        working-directory: helm-gh-pages
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          git commit -m "Clean up old Helm chart packages" || echo "No changes to commit"
-          git push
