@@ -36,4 +36,7 @@ spec:
                   key: FLASK_ENV
             - name: SQLALCHEMY_DATABASE_URI
               value: {{ .Values.flask.databaseUri | quote }}
+      # Uncomment the imagePullSecrets block if you need to pull from a private registry
+      # imagePullSecrets:
+      #   - name: regcred
 
