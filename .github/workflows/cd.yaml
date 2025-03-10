@@ -28,13 +28,6 @@ jobs:
           project_id: onyx-seeker-451213-q9
           # Optionally, specify additional inputs such as version or components
 
-      # 4. Activate service account (optional; fixed to use printf to correctly write the JSON key)
-      - name: Activate service account
-        run: |
-          printf '%s' "${{ secrets.GCP_SA_KEY }}" > ${HOME}/gcloud-key.json
-          gcloud auth activate-service-account --key-file=${HOME}/gcloud-key.json
-          gcloud auth list
-
       # 5. Set up Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v1
