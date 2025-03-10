@@ -26,8 +26,12 @@ resource "google_container_cluster" "primary" {
     }
   }
 
-  # Remove the master_version line:
-  # master_version = var.master_version
+  # Specify the zones (locations) that your cluster should use,
+  # excluding "us-central1-c" to avoid resource shortages.
+  locations = [
+    "us-central1-a",
+    "us-central1-f",
+  ]
 }
 
 resource "google_container_node_pool" "primary_nodes" {
@@ -36,9 +40,6 @@ resource "google_container_node_pool" "primary_nodes" {
   location = var.region
 
   initial_node_count = 1
-
-  # Optionally set a node version if you want a fixed version, otherwise omit this line:
-  # version = var.node_version
 
   node_config {
     machine_type  = var.machine_type
