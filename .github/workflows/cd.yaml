@@ -1,0 +1,129 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - 'v*'      # Trigger when pushing tags like v1.0.0
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # 2. Authenticate to Google Cloud using the service account key
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      # 3. Set up Cloud SDK (do not pass service_account_key here)
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: onyx-seeker-451213-q9
+          # Optionally, specify additional inputs such as version or components
+
+      # 4. Activate service account (optional; fixed to use printf to correctly write the JSON key)
+      - name: Activate service account
+        run: |
+          printf '%s' "${{ secrets.GCP_SA_KEY }}" > ${HOME}/gcloud-key.json
+          gcloud auth activate-service-account --key-file=${HOME}/gcloud-key.json
+          gcloud auth list
+
+      # 5. Set up Terraform
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: '1.5.0'
+
+      # 6. Terraform Init
+      - name: Terraform Init
+        working-directory: terraform
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+        run: terraform init
+
+      # 7. Terraform Plan
+      - name: Terraform Plan
+        working-directory: terraform
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+          TF_VAR_project: onyx-seeker-451213-q9
+          TF_VAR_region: us-central1
+          TF_VAR_machine_type: e2-medium
+          TF_VAR_disk_size_gb: 100
+          TF_VAR_disk_type: pd-standard
+        run: terraform plan
+
+      # 8. Terraform Import Cluster (import existing cluster into state)
+      - name: Terraform Import Cluster
+        working-directory: terraform
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+          TF_VAR_project: onyx-seeker-451213-q9
+          TF_VAR_region: us-central1
+          TF_VAR_machine_type: e2-medium
+          TF_VAR_disk_size_gb: 100
+          TF_VAR_disk_type: pd-standard
+        run: |
+          terraform import google_container_cluster.primary projects/onyx-seeker-451213-q9/locations/us-central1/clusters/cat-gifs-cluster || echo "Cluster already imported"
+
+      # 9. Terraform Import Node Pool (import existing node pool into state)
+      - name: Terraform Import Node Pool
+        working-directory: terraform
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+          TF_VAR_project: onyx-seeker-451213-q9
+          TF_VAR_region: us-central1
+          TF_VAR_machine_type: e2-medium
+          TF_VAR_disk_size_gb: 100
+          TF_VAR_disk_type: pd-standard
+        run: |
+          terraform import google_container_node_pool.primary_nodes projects/onyx-seeker-451213-q9/locations/us-central1/clusters/cat-gifs-cluster/nodePools/cat-gifs-node-pool || echo "Node pool already imported"
+
+      # 10. Terraform Apply
+      - name: Terraform Apply
+        working-directory: terraform
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+          TF_VAR_project: onyx-seeker-451213-q9
+          TF_VAR_region: us-central1
+          TF_VAR_machine_type: e2-medium
+          TF_VAR_disk_size_gb: 100
+          TF_VAR_disk_type: pd-standard
+        run: terraform apply -auto-approve
+
+      # 11. Build the Docker image for your app
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/cat-gifs-app:latest .
+
+      # 12. Log in to Docker Hub
+      - name: Log in to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      # 13. Push the Docker image to Docker Hub
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/cat-gifs-app:latest
+
+      # 14. Install gke-gcloud-auth-plugin so kubectl can use it
+      - name: Install gke-gcloud-auth-plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin --quiet
+
+      # 15. Configure GKE credentials (generate kubeconfig dynamically)
+      - name: Configure GKE credentials
+        run: |
+          gcloud container clusters get-credentials cat-gifs-cluster --region us-central1 --project onyx-seeker-451213-q9
+
+      # 16. Deploy your application to Kubernetes using Helm
+      - name: Deploy via Helm
+        run: |
+          helm upgrade --install catshelm ./helmchart --namespace default --wait --history-max=1 --force
