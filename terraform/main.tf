@@ -26,9 +26,8 @@ resource "google_container_cluster" "primary" {
     }
   }
 
-  # Specify the zones (locations) that your cluster should use,
-  # excluding "us-central1-c" to avoid resource shortages.
-  locations = [
+  # For regional clusters, use node_locations to specify the zones
+  node_locations = [
     "us-central1-a",
     "us-central1-f",
   ]
