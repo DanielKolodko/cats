@@ -10,7 +10,7 @@ flask:
   env: "production"
 
   # Example SQLAlchemy URI
-  databaseUri: "mysql+pymysql://catuser:catpassword@helmchart-mysql-service/catgifs"
+  databaseUri: "mysql+pymysql://catuser:catpassword@catshelm-helmchart-mysql-service/catgifs"
 
 mysql:
   replicaCount: 1
@@ -29,7 +29,7 @@ seedJob:
     repository: mysql
     tag: "8.0"
   database:
-    host: "helmchart-mysql-service"
+    host: "catshelm-helmchart-mysql-service"
     user: "catuser"
     password: "catpassword"
     name: "catgifs"

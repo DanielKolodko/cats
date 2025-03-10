@@ -15,14 +15,7 @@ spec:
       containers:
         - name: seed
           image: "{{ .Values.seedJob.image.repository }}:{{ .Values.seedJob.image.tag }}"
-          command:
-            - "sh"
-            - "-c"
-            - >
-              mysql -h {{ .Values.seedJob.database.host }}
-                   -u {{ .Values.seedJob.database.user }}
-                   -p{{ .Values.seedJob.database.password }}
-                   {{ .Values.seedJob.database.name }} < /dump/dump.sql
+          command: ["sh", "-c", "mysql -h {{ .Values.seedJob.database.host }} -u {{ .Values.seedJob.database.user }} -p{{ .Values.seedJob.database.password }} {{ .Values.seedJob.database.name }} < /dump/dump.sql"]
           volumeMounts:
             - name: dump-volume
               mountPath: /dump
