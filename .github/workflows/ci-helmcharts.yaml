@@ -32,8 +32,8 @@ jobs:
       # 4. Upload the packaged chart to the GCS bucket and update the index
       - name: Upload Chart Package and Update Index
         run: |
-          # Replace "cats-0.1.0.tgz" with your actual chart package name if different.
-          gsutil cp cats-0.1.0.tgz gs://helm-charts1306/
+          # Replace "helmchart-0.1.0.tgz" with your actual chart package name if different.
+          gsutil cp helmchart-0.1.0.tgz gs://helm-charts1306/
           # Create or update the index file in the current directory.
           helm repo index . --url https://storage.googleapis.com/helm-charts1306
           ls -l index.yaml
