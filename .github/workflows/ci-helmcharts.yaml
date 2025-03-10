@@ -16,26 +16,31 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 2. Package the Helm chart (this creates cats-0.1.0.tgz)
+      # 2. Package the Helm chart (this creates your .tgz chart package)
       - name: Package Helm Chart
         run: |
           helm package ./helmchart
           ls -l *.tgz
 
-      # 3. Set up Google Cloud SDK for authentication
+      # 3. Authenticate to Google Cloud using your service account key
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      # 4. Set up Cloud SDK without service_account_key input
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      # 4. Upload the packaged chart to the GCS bucket and update the index
+      # 5. Upload the packaged chart(s) and update the repository index
       - name: Upload Chart Package and Update Index
         run: |
-          # Replace "helmchart-0.1.0.tgz" with your actual chart package name if different.
-          gsutil cp helmchart-0.1.0.tgz gs://helm-charts1306/
-          # Create or update the index file in the current directory.
+          # Upload all chart packages (e.g., helmchart-0.1.0.tgz, helmchart-0.2.0.tgz, etc.)
+          gsutil cp *.tgz gs://helm-charts1306/
+          # Create or update the Helm repository index using the bucket's public URL
           helm repo index . --url https://storage.googleapis.com/helm-charts1306
           ls -l index.yaml
-          # Upload the updated index file.
+          # Upload the updated index file
           gsutil cp index.yaml gs://helm-charts1306/
