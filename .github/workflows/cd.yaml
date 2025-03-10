@@ -1,4 +1,4 @@
-name: CD
+name: helmCD
 
 on:
   push:
@@ -26,7 +26,13 @@ jobs:
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: onyx-seeker-451213-q9
-          # Optionally, specify additional inputs such as version or components
+
+      # 4. (Optional) Activate service account – you can remove this if not needed
+      - name: Activate service account
+        run: |
+          printf '%s' "${{ secrets.GCP_SA_KEY }}" > ${HOME}/gcloud-key.json
+          gcloud auth activate-service-account --key-file=${HOME}/gcloud-key.json
+          gcloud auth list
 
       # 5. Set up Terraform
       - name: Set up Terraform
@@ -78,6 +84,15 @@ jobs:
           TF_VAR_disk_type: pd-standard
         run: |
           terraform import google_container_node_pool.primary_nodes projects/onyx-seeker-451213-q9/locations/us-central1/clusters/cat-gifs-cluster/nodePools/cat-gifs-node-pool || echo "Node pool already imported"
+
+      # 9.1 Terraform Import Bucket (import existing bucket into state)
+      - name: Terraform Import Bucket
+        working-directory: terraform
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+          TF_VAR_project: onyx-seeker-451213-q9
+        run: |
+          terraform import google_storage_bucket.sql-backup-bucket my-sql-db-backup-bucket || echo "Bucket already imported"
 
       # 10. Terraform Apply
       - name: Terraform Apply
