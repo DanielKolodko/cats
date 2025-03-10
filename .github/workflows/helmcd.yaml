@@ -1,3 +1,5 @@
+name: Package and Push Helm Chart
+
 on:
   push:
     tags:
@@ -13,37 +15,40 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # 2. Set up GCP credentials using the service account key
-      - name: Set up GCP credentials
+      # 2. Authenticate to Google Cloud using the service account key
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      # 3. Set up Cloud SDK (do not pass service_account_key here)
+      - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
           project_id: onyx-seeker-451213-q9
-          export_default_credentials: true
+          # Optionally, specify additional inputs such as version or components
 
-      # 3. Activate the service account
+      # (Optional) 4. Activate service account (this step can be removed if not needed)
       - name: Activate service account
-        env:
-          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
-          echo "$GCP_SA_KEY" > ${HOME}/gcloud-key.json
+          echo "${{ secrets.GCP_SA_KEY }}" > ${HOME}/gcloud-key.json
           gcloud auth activate-service-account --key-file=${HOME}/gcloud-key.json
           gcloud auth list
 
-      # 4. Set up Terraform
+      # 5. Set up Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: '1.5.0'
 
-      # 5. Terraform Init
+      # 6. Terraform Init
       - name: Terraform Init
         working-directory: terraform
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
         run: terraform init
 
-      # 6. Terraform Plan
+      # 7. Terraform Plan
       - name: Terraform Plan
         working-directory: terraform
         env:
@@ -55,7 +60,7 @@ jobs:
           TF_VAR_disk_type: pd-standard
         run: terraform plan
 
-      # 7. Terraform Import Cluster (import existing cluster into state)
+      # 8. Terraform Import Cluster (import existing cluster into state)
       - name: Terraform Import Cluster
         working-directory: terraform
         env:
@@ -67,8 +72,8 @@ jobs:
           TF_VAR_disk_type: pd-standard
         run: |
           terraform import google_container_cluster.primary projects/onyx-seeker-451213-q9/locations/us-central1/clusters/cat-gifs-cluster || echo "Cluster already imported"
-      
-      # 7.1. Terraform Import Node Pool (import existing node pool into state)
+
+      # 9. Terraform Import Node Pool (import existing node pool into state)
       - name: Terraform Import Node Pool
         working-directory: terraform
         env:
@@ -81,7 +86,7 @@ jobs:
         run: |
           terraform import google_container_node_pool.primary_nodes projects/onyx-seeker-451213-q9/locations/us-central1/clusters/cat-gifs-cluster/nodePools/cat-gifs-node-pool || echo "Node pool already imported"
 
-      # 8. Terraform Apply
+      # 10. Terraform Apply
       - name: Terraform Apply
         working-directory: terraform
         env:
@@ -93,32 +98,32 @@ jobs:
           TF_VAR_disk_type: pd-standard
         run: terraform apply -auto-approve
 
-      # 9. Build the Docker image for your app
+      # 11. Build the Docker image for your app
       - name: Build Docker image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/cat-gifs-app:latest .
 
-      # 10. Log in to Docker Hub
+      # 12. Log in to Docker Hub
       - name: Log in to Docker Hub
         run: |
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      # 11. Push the Docker image to Docker Hub
+      # 13. Push the Docker image to Docker Hub
       - name: Push Docker image
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/cat-gifs-app:latest
 
-      # 12. Install gke-gcloud-auth-plugin so kubectl can use it
+      # 14. Install gke-gcloud-auth-plugin so kubectl can use it
       - name: Install gke-gcloud-auth-plugin
         run: |
           gcloud components install gke-gcloud-auth-plugin --quiet
 
-      # 13. Configure GKE credentials (generate kubeconfig dynamically)
+      # 15. Configure GKE credentials (generate kubeconfig dynamically)
       - name: Configure GKE credentials
         run: |
           gcloud container clusters get-credentials cat-gifs-cluster --region us-central1 --project onyx-seeker-451213-q9
 
-      # 14. Deploy your application to Kubernetes using Helm
+      # 16. Deploy your application to Kubernetes using Helm
       - name: Deploy via Helm
         run: |
           helm upgrade --install catshelm ./helmchart --namespace default --wait --history-max=1 --force
