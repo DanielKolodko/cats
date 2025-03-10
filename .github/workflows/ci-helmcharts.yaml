@@ -34,13 +34,4 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      # 5. Upload the packaged chart(s) and update the repository index
-      - name: Upload Chart Package and Update Index
-        run: |
-          # Upload all chart packages (e.g., helmchart-0.1.0.tgz, helmchart-0.2.0.tgz, etc.)
-          gsutil cp *.tgz gs://helm-charts1306/
-          # Create or update the Helm repository index using the bucket's public URL
-          helm repo index . --url https://storage.googleapis.com/helm-charts1306
-          ls -l index.yaml
-          # Upload the updated index file
-          gsutil cp index.yaml gs://helm-charts1306/
+      # 5. Download c
