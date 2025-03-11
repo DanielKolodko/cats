@@ -4,15 +4,15 @@ metadata:
   name: {{ include "helmchart.fullname" . }}-flask-servicemonitor
   namespace: monitoring
   labels:
-    release: prometheus
+    release: kube-prometheus-stack
 spec:
   selector:
     matchLabels:
       app: {{ include "helmchart.name" . }}-flask
   endpoints:
-    - port: metrics  # Ensure your Service port is named "metrics"
+    - port: metrics
       path: /metrics
       interval: 30s
   namespaceSelector:
     matchNames:
-      - default  # Change this if your Flask Service is in a different namespace
+      - default
