@@ -22,7 +22,8 @@ spec:
         - name: flask-app
           image: "{{ .Values.flask.image.repository }}:{{ .Values.flask.image.tag }}"
           ports:
-            - containerPort: 5000
+            - name: metrics
+              containerPort: 5000
           env:
             - name: FLASK_APP
               valueFrom:

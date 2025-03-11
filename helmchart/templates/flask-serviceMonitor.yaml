@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "helmchart.fullname" . }}-flask-servicemonitor
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "helmchart.name" . }}-flask
+  endpoints:
+    - port: metrics  # Ensure your Service port is named "metrics"
+      path: /metrics
+      interval: 30s
+  namespaceSelector:
+    matchNames:
+      - default  # Change this if your Flask Service is in a different namespace
