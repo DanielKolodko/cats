@@ -109,12 +109,7 @@ jobs:
         run: |
           gcloud container clusters get-credentials cat-gifs-cluster --region us-central1 --project onyx-seeker-451213-q9
 
-      # 13. Deploy your application to Kubernetes using Helm
-      - name: Deploy via Helm
-        run: |
-          helm upgrade --install catshelm ./helmchart --namespace default --wait --history-max=1 --force
-
-      # 14. Deploy Grafana & Prometheus via Helm (kube-prometheus-stack)
+      # 13. Deploy Grafana & Prometheus via Helm (kube-prometheus-stack)
       - name: Deploy Grafana & Prometheus via Helm
         run: |
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
@@ -126,3 +121,8 @@ jobs:
             --history-max=1 \
             --force \
             --values helmchart/prometheus-grafana-values.yaml
+
+      # 14. Deploy your application to Kubernetes using Helm
+      - name: Deploy Application via Helm
+        run: |
+          helm upgrade --install catshelm ./helmchart --namespace default --wait --history-max=1 --force
