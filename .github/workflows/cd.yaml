@@ -120,7 +120,8 @@ jobs:
             --wait \
             --history-max=1 \
             --force \
-
+            --values helmchart/prometheus-grafana-values.yaml
+      
       # 14. Deploy your application to Kubernetes using Helm
       - name: Deploy Application via Helm
         run: |

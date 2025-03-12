@@ -1,0 +1,16 @@
+grafana:
+  persistence:
+    enabled: true
+    storageClassName: pvc    # Adjust this if needed
+    accessModes:
+      - ReadWriteOnce
+    size: 10Gi
+  adminUser: admin
+  adminPassword: oldpassword
+  dashboards:
+    default:
+      # Optionally, specify default dashboards to import
+
+prometheus:
+  retention: 10d
+  # Other Prometheus-specific overrides can be added here
