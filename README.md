@@ -1,4 +1,5 @@
 # Cats Devops project
+![DevOps Project Chart](DevOpsProjectChart.png)
 
 Welcome to the Cats DevOps project! This repository serves as the central hub for our DevOps automation that builds, deploys, and manages a cat gifs application on Google Cloud Platform (GCP). The project leverages modern CI/CD practices, Terraform, Docker, Helm, and monitoring tools to create and maintain a robust Kubernetes infrastructure on GKE.
 # Project goals:
